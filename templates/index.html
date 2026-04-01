@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ESP8266 Control Panel</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #f4f4f4;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    text-align: center;
+}
+
+h2 {
+    background: #1976d2;
+    color: white;
+    padding: 15px;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+}
+
+input {
+    padding: 10px;
+    width: 250px;
+    margin: 5px;
+}
+
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+th {
+    background: #1976d2;
+    color: white;
+    padding: 10px;
+}
+
+td {
+    padding: 8px;
+    text-align: center;
+}
+
+#tableDiv {
+    display: block;
+}
+</style>
+
+<script>
+async function start(){ await fetch('/start'); }
+async function stop(){ await fetch('/stop'); }
+
+async function loadData(){
+    let res = await fetch('/data');
+    let data = await res.json();
+
+    let rows = "";
+    data.forEach(r=>{
+        rows += `<tr>
+            <td>${r.id}</td>
+            <td>${r.s1}</td>
+            <td>${r.s2}</td>
+            <td>${r.s3}</td>
+            <td>${r.date}</td>
+        </tr>`;
+    });
+
+    document.getElementById("tbody").innerHTML = rows;
+}
+
+async function status(){
+    let res = await fetch('/status');
+    let d = await res.json();
+    document.getElementById("status").innerText = d.status;
+}
+
+async function search(){
+    let start = document.getElementById("start").value;
+    let end = document.getElementById("end").value;
+
+    let res = await fetch('/search', {
+        method: "POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body: `start=${start}&end=${end}`
+    });
+
+    let data = await res.json();
+    showData(data);
+}
+
+async function runQuery(){
+    let q = document.getElementById("query").value;
+
+    let res = await fetch('/query', {
+        method:"POST",
+        headers: {"Content-Type":"application/x-www-form-urlencoded"},
+        body:`query=${q}`
+    });
+
+    let data = await res.json();
+    showData(data);
+}
+
+function showData(data){
+    let rows="";
+    data.forEach(r=>{
+        rows+=`<tr>
+        <td>${r.id}</td>
+        <td>${r.s1}</td>
+        <td>${r.s2}</td>
+        <td>${r.s3}</td>
+        <td>${r.date}</td></tr>`;
+    });
+    document.getElementById("tbody").innerHTML=rows;
+}
+
+function toggle(){
+    let t=document.getElementById("tableDiv");
+    t.style.display = (t.style.display==="none")?"block":"none";
+}
+
+setInterval(loadData,5000);
+setInterval(status,3000);
+</script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>ESP8266 Control Panel</h2>
+
+<button onclick="start()">Start</button>
+<button onclick="stop()">Stop</button>
+<button onclick="toggle()">Show / Hide</button>
+
+<h3>Status: <span id="status">Checking...</span></h3>
+
+<h3>Search by Date</h3>
+<input type="datetime-local" id="start">
+<input type="datetime-local" id="end">
+<button onclick="search()">Search</button>
+
+<h3>Custom Query</h3>
+<input type="text" id="query" style="width:400px;">
+<button onclick="runQuery()">Run</button>
+
+<div id="tableDiv">
+<table border="1">
+<thead>
+<tr>
+<th>ID</th><th>S1</th><th>S2</th><th>S3</th><th>Date</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+
+</div>
+
+</body>
+</html>
