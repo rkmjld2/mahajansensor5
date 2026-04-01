@@ -111,16 +111,19 @@ async function runQuery(){
 }
 
 function showData(data){
-    let rows="";
-    data.forEach(r=>{
-        rows+=`<tr>
-        <td>${r.id}</td>
-        <td>${r.s1}</td>
-        <td>${r.s2}</td>
-        <td>${r.s3}</td>
-        <td>${r.date}</td></tr>`;
+    let rows = "";
+
+    data.forEach(r => {
+        rows += `<tr>
+        <td>${r.id ?? ''}</td>
+        <td>${r.sensor1 ?? 0}</td>
+        <td>${r.sensor2 ?? 0}</td>
+        <td>${r.sensor3 ?? 0}</td>
+        <td>${r.timestamp ?? ''}</td>
+        </tr>`;
     });
-    document.getElementById("tbody").innerHTML=rows;
+
+    document.getElementById("tbody").innerHTML = rows;
 }
 
 function toggle(){
