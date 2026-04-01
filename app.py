@@ -15,10 +15,10 @@ DB_CONFIG = {
 }
 
 API_KEY = os.getenv("API_KEY", "12b5112c62284ea0b3da0039f298ec7a85ac9a1791044052b6df970640afb1c5")
-
+ True 
 # -------- GLOBAL STATUS --------
 esp_connected = False
-collect_data = False
+collect_data = True 
 last_seen = 0
 
 
