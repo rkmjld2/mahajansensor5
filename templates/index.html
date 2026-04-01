@@ -122,19 +122,22 @@ async function runQuery(){
 }
 
 function showData(data){
-    let rows = "";
+    let tbody = document.getElementById("tbody");
+
+    // 🔥 CLEAR OLD DATA FIRST
+    tbody.innerHTML = "";
 
     data.forEach(r => {
-        rows += `<tr>
-        <td>${r.id ?? ''}</td>
-        <td>${r.sensor1 ?? 0}</td>
-        <td>${r.sensor2 ?? 0}</td>
-        <td>${r.sensor3 ?? 0}</td>
-        <td>${r.timestamp ?? ''}</td>
+        let row = `<tr>
+            <td>${r.id}</td>
+            <td>${r.sensor1}</td>
+            <td>${r.sensor2}</td>
+            <td>${r.sensor3}</td>
+            <td>${r.timestamp}</td>
         </tr>`;
-    });
 
-    document.getElementById("tbody").innerHTML = rows;
+        tbody.innerHTML += row;
+    });
 }
 
 function toggle(){
