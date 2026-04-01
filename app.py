@@ -121,22 +121,25 @@ def get_data():
 # -------- DATE SEARCH --------
 @app.route("/search", methods=["POST"])
 def search():
-    start = request.form["start"]
-    end = request.form["end"]
+    start = request.form.get("start")
+    end = request.form.get("end")
 
     db = get_db()
     cursor = db.cursor(dictionary=True)
 
-    query = "SELECT * FROM sensor_db WHERE date BETWEEN %s AND %s"
-    cursor.execute(query, (start, end))
+    query = """
+    SELECT * FROM sensor_db 
+    WHERE date BETWEEN %s AND %s
+    ORDER BY id DESC
+    """
 
+    cursor.execute(query, (start, end))
     data = cursor.fetchall()
 
     cursor.close()
     db.close()
 
     return jsonify(data)
-
 
 # -------- CUSTOM QUERY --------
 @app.route("/query", methods=["POST"])
