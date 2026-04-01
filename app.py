@@ -109,23 +109,22 @@ def status():
 # -------- GET LATEST DATA --------
 @app.route("/data")
 def get_data():
-    try:
-        db = get_db()
-        cursor = db.cursor(dictionary=True)
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
 
-        query = """
+    cursor.execute("""
         SELECT id, sensor1, sensor2, sensor3, timestamp
         FROM sensor_db
         ORDER BY id DESC
         LIMIT 100
-        """
-        cursor.execute(query)
-        data = cursor.fetchall()
+    """)
 
-        cursor.close()
-        db.close()
+    data = cursor.fetchall()
 
-        return jsonify(data)
+    cursor.close()
+    db.close()
+
+    return jsonify(data)
 
     except Exception as e:
         return jsonify({"error": str(e)})
