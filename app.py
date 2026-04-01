@@ -59,8 +59,7 @@ def receive_data():
         db = get_db()
         cursor = db.cursor()
 
-        sql = "INSERT INTO sensor_db (s1, s2, s3) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (s1, s2, s3))
+       sql = "INSERT INTO sensor_db (sensor1, sensor2, sensor3) VALUES (%s, %s, %s)"
 
         db.commit()
         cursor.close()
