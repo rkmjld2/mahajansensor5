@@ -107,7 +107,18 @@ async function runQuery(){
     });
 
     let data = await res.json();
-    showData(data);
+
+    // If SELECT → show table
+    if (Array.isArray(data)) {
+        showData(data);
+    } 
+    // If DELETE/UPDATE → show message
+    else {
+        alert("✔ " + data.message + 
+              "\nRows affected: " + data.rows_affected);
+
+        loadData();  // refresh table
+    }
 }
 
 function showData(data){
