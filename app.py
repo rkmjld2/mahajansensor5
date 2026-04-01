@@ -163,25 +163,38 @@ def search():
 def run_query():
     sql = request.form.get("query")
 
-    # सुरक्षा (only SELECT allowed)
-    if not sql.lower().startswith("select"):
-        return "Only SELECT queries allowed"
+    if not sql:
+        return "No query provided"
 
     try:
         db = get_db()
         cursor = db.cursor(dictionary=True)
 
-        cursor.execute(sql)
-        data = cursor.fetchall()
+        # -------- SELECT QUERY --------
+        if sql.lower().startswith("select"):
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            return jsonify(data)
 
-        cursor.close()
-        db.close()
+        # -------- DELETE / UPDATE --------
+        elif sql.lower().startswith("delete") or sql.lower().startswith("update"):
+            cursor.execute(sql)
+            db.commit()
 
-        return jsonify(data)
+            return jsonify({
+                "message": "Query executed successfully",
+                "rows_affected": cursor.rowcount
+            })
+
+        else:
+            return "Only SELECT / DELETE / UPDATE allowed"
 
     except Exception as e:
         return jsonify({"error": str(e)})
 
+    finally:
+        cursor.close()
+        db.close()
 
 # -------- RUN APP --------
 if __name__ == "__main__":
