@@ -66,12 +66,12 @@ async function loadData(){
     let rows = "";
     data.forEach(r=>{
         rows += `<tr>
-            <td>${r.id}</td>
-            <td>${r.s1}</td>
-            <td>${r.s2}</td>
-            <td>${r.s3}</td>
-            <td>${r.date}</td>
-        </tr>`;
+<td>${r.id || ''}</td>
+<td>${r.s1 || 0}</td>
+<td>${r.s2 || 0}</td>
+<td>${r.s3 || 0}</td>
+<td>${r.date || ''}</td>
+</tr>`;
     });
 
     document.getElementById("tbody").innerHTML = rows;
