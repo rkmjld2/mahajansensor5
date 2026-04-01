@@ -34,7 +34,7 @@ def home():
 
 
 # -------- RECEIVE DATA --------
-@app.route("/api/data")
+  @app.route("/api/data")
 def receive_data():
     global esp_connected, last_seen, collect_data
 
@@ -48,9 +48,12 @@ def receive_data():
     if not collect_data:
         return "Stopped"
 
-    s1 = request.args.get("s1")
-    s2 = request.args.get("s2")
-    s3 = request.args.get("s3")
+    try:
+        s1 = float(request.args.get("s1", 0))
+        s2 = float(request.args.get("s2", 0))
+        s3 = float(request.args.get("s3", 0))
+    except:
+        return "Invalid sensor values"
 
     try:
         db = get_db()
@@ -65,6 +68,8 @@ def receive_data():
 
         return "Saved"
 
+    except Exception as e:
+        return str(e)  
     except Exception as e:
         return str(e)
 
