@@ -1,20 +1,20 @@
 from flask import Flask, request, jsonify, render_template
 import mysql.connector
-from datetime import datetime
 import time
+import os
 
 app = Flask(__name__)
 
-# -------- YOUR DATABASE CONFIG --------
+# -------- LOAD ENV VARIABLES --------
 DB_CONFIG = {
-    "host": "gateway01.ap-southeast-1.prod.aws.tidbcloud.com",
-    "port": 4000,
-    "user": "ax6KHc1BNkyuaor.root",
-    "password": "EP8isIWoEOQk7DSr",
-    "database": "sensor"
+    "host": os.getenv("DB_HOST", "gateway01.ap-southeast-1.prod.aws.tidbcloud.com"),
+    "port": int(os.getenv("DB_PORT", 4000)),
+    "user": os.getenv("DB_USER", "ax6KHc1BNkyuaor.root"),
+    "password": os.getenv("DB_PASSWORD", "EP8isIWoEOQk7DSr"),
+    "database": os.getenv("DB_NAME", "sensor")
 }
 
-API_KEY = "12b5112c62284ea0b3da0039f298ec7a85ac9a1791044052b6df970640afb1c5"
+API_KEY = os.getenv("API_KEY", "12b5112c62284ea0b3da0039f298ec7a85ac9a1791044052b6df970640afb1c5")
 
 # -------- GLOBAL STATUS --------
 esp_connected = False
@@ -22,36 +22,37 @@ collect_data = False
 last_seen = 0
 
 
-# -------- DB CONNECTION --------
+# -------- DATABASE CONNECTION --------
 def get_db():
     return mysql.connector.connect(**DB_CONFIG)
 
 
-# -------- HOME --------
+# -------- HOME PAGE --------
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-# -------- RECEIVE DATA --------
-  @app.route("/api/data")
+# -------- RECEIVE DATA FROM ESP --------
+@app.route("/api/data")
 def receive_data():
     global esp_connected, last_seen, collect_data
 
     key = request.args.get("key")
     if key != API_KEY:
-        return "Invalid Key", 403
+        return "Invalid API Key", 403
 
     esp_connected = True
     last_seen = time.time()
 
+    # If STOP pressed, do not save data
     if not collect_data:
         return "Stopped"
 
     try:
-        s1 = float(request.args.get("s1", 0))
-        s2 = float(request.args.get("s2", 0))
-        s3 = float(request.args.get("s3", 0))
+        sensor1 = float(request.args.get("s1", 0))
+        sensor2 = float(request.args.get("s2", 0))
+        sensor3 = float(request.args.get("s3", 0))
     except:
         return "Invalid sensor values"
 
@@ -59,7 +60,11 @@ def receive_data():
         db = get_db()
         cursor = db.cursor()
 
-       sql = "INSERT INTO sensor_db (sensor1, sensor2, sensor3) VALUES (%s, %s, %s)"
+        sql = """
+        INSERT INTO sensor_db (sensor1, sensor2, sensor3)
+        VALUES (%s, %s, %s)
+        """
+        cursor.execute(sql, (sensor1, sensor2, sensor3))
 
         db.commit()
         cursor.close()
@@ -68,12 +73,10 @@ def receive_data():
         return "Saved"
 
     except Exception as e:
-        return str(e)  
-    except Exception as e:
-        return str(e)
+        return str(e), 500
 
 
-# -------- START --------
+# -------- START DATA COLLECTION --------
 @app.route("/start")
 def start():
     global collect_data
@@ -81,7 +84,7 @@ def start():
     return "Started"
 
 
-# -------- STOP --------
+# -------- STOP DATA COLLECTION --------
 @app.route("/stop")
 def stop():
     global collect_data
@@ -89,11 +92,12 @@ def stop():
     return "Stopped"
 
 
-# -------- STATUS --------
+# -------- STATUS CHECK --------
 @app.route("/status")
 def status():
     global esp_connected
 
+    # If no data received in last 10 sec → disconnected
     if time.time() - last_seen > 10:
         esp_connected = False
 
@@ -102,63 +106,84 @@ def status():
     })
 
 
-# -------- GET DATA --------
+# -------- GET LATEST DATA --------
 @app.route("/data")
 def get_data():
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM sensor_db ORDER BY id DESC LIMIT 100")
-    data = cursor.fetchall()
+        query = """
+        SELECT id, sensor1, sensor2, sensor3, timestamp
+        FROM sensor_db
+        ORDER BY id DESC
+        LIMIT 100
+        """
+        cursor.execute(query)
+        data = cursor.fetchall()
 
-    cursor.close()
-    db.close()
+        cursor.close()
+        db.close()
 
-    return jsonify(data)
+        return jsonify(data)
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
-# -------- DATE SEARCH --------
+# -------- SEARCH BY DATE RANGE --------
 @app.route("/search", methods=["POST"])
 def search():
     start = request.form.get("start")
     end = request.form.get("end")
 
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-    query = """
-    SELECT * FROM sensor_db 
-    WHERE date BETWEEN %s AND %s
-    ORDER BY id DESC
-    """
+        query = """
+        SELECT id, sensor1, sensor2, sensor3, timestamp
+        FROM sensor_db
+        WHERE timestamp BETWEEN %s AND %s
+        ORDER BY id DESC
+        """
+        cursor.execute(query, (start, end))
+        data = cursor.fetchall()
 
-    cursor.execute(query, (start, end))
-    data = cursor.fetchall()
+        cursor.close()
+        db.close()
 
-    cursor.close()
-    db.close()
+        return jsonify(data)
 
-    return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
-# -------- CUSTOM QUERY --------
+
+# -------- CUSTOM SELECT QUERY --------
 @app.route("/query", methods=["POST"])
-def query():
-    sql = request.form["query"]
+def run_query():
+    sql = request.form.get("query")
 
+    # सुरक्षा (only SELECT allowed)
     if not sql.lower().startswith("select"):
-        return "Only SELECT allowed"
+        return "Only SELECT queries allowed"
 
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
 
-    cursor.execute(sql)
-    data = cursor.fetchall()
+        cursor.execute(sql)
+        data = cursor.fetchall()
 
-    cursor.close()
-    db.close()
+        cursor.close()
+        db.close()
 
-    return jsonify(data)
+        return jsonify(data)
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 
+# -------- RUN APP --------
 if __name__ == "__main__":
     app.run(debug=True)
