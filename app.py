@@ -114,7 +114,12 @@ def get_data():
             LIMIT 100
         """)
 
-        data = cursor.fetchall()
+       data = cursor.fetchall()
+
+# 🔥 FORMAT DATE HERE
+for row in data:
+    if row["timestamp"]:
+        row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
 
         cursor.close()
         db.close()
