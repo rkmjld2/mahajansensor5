@@ -154,7 +154,9 @@ def search():
         """, (start, end))
 
         data = cursor.fetchall()
-
+for row in data:
+    if row["timestamp"]:
+        row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
         cursor.close()
         db.close()
 
