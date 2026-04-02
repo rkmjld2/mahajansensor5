@@ -203,7 +203,65 @@ def run_query():
     finally:
         cursor.close()
         db.close()
+# ......................graph
+@app.route("/download", methods=["POST"])
+def download():
+    import csv
+    from io import StringIO
 
+    start = request.form.get("start")
+    end = request.form.get("end")
+
+    if start:
+        start = start.replace("T", " ")
+    if end:
+        end = end.replace("T", " ")
+
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT id, sensor1, sensor2, sensor3, timestamp
+            FROM sensor_db
+            WHERE timestamp BETWEEN %s AND %s
+            ORDER BY id DESC
+        """, (start, end))
+
+        data = cursor.fetchall()
+
+        # format date
+        for row in data:
+            if row["timestamp"]:
+                row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
+
+        # create CSV
+        si = StringIO()
+        writer = csv.writer(si)
+
+        writer.writerow(["ID","Sensor1","Sensor2","Sensor3","Timestamp"])
+
+        for row in data:
+            writer.writerow([
+                row["id"],
+                row["sensor1"],
+                row["sensor2"],
+                row["sensor3"],
+                row["timestamp"]
+            ])
+
+        output = si.getvalue()
+
+        cursor.close()
+        db.close()
+
+        return output, 200, {
+            'Content-Type': 'text/csv',
+            'Content-Disposition': 'attachment; filename=data.csv'
+        }
+
+    except Exception as e:
+        return str(e)
 
 if __name__ == "__main__":
     app.run(debug=True)
