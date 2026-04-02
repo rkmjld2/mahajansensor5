@@ -15,7 +15,7 @@ DB_CONFIG = {
     "connection_timeout": 5
 }
 
-API_KEY = os.getenv("API_KEY", "12b5112c62284ea0b3da0039f298ec7a85ac9a1791044052b6df970640afb1c5")
+API_KEY = os.getenv("API_KEY", "12b5112c62284ea0b3da0039f298ec7a85ac9a1791044052b6df970640afb1c62284ea0b3da0039f298ec7a85ac9a1791044052b6df970640afb1c5")
 
 esp_connected = False
 collect_data = True
@@ -114,12 +114,12 @@ def get_data():
             LIMIT 100
         """)
 
-       data = cursor.fetchall()
+        data = cursor.fetchall()
 
-# 🔥 FORMAT DATE HERE
-for row in data:
-    if row["timestamp"]:
-        row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
+        # 🔥 FORMAT DATE
+        for row in data:
+            if row["timestamp"]:
+                row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
 
         cursor.close()
         db.close()
@@ -136,7 +136,6 @@ def search():
     start = request.form.get("start")
     end = request.form.get("end")
 
-    # 🔥 FIX datetime format
     if start:
         start = start.replace("T", " ")
     if end:
@@ -154,9 +153,12 @@ def search():
         """, (start, end))
 
         data = cursor.fetchall()
-for row in data:
-    if row["timestamp"]:
-        row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
+
+        # 🔥 FORMAT DATE
+        for row in data:
+            if row["timestamp"]:
+                row["timestamp"] = row["timestamp"].strftime("%d/%m/%Y %H:%M:%S")
+
         cursor.close()
         db.close()
 
@@ -180,7 +182,8 @@ def run_query():
 
         if sql.lower().startswith("select"):
             cursor.execute(sql)
-            return jsonify(cursor.fetchall())
+            result = cursor.fetchall()
+            return jsonify(result)
 
         elif sql.lower().startswith(("delete", "update")):
             cursor.execute(sql)
