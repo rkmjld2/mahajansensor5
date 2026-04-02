@@ -115,13 +115,17 @@ function showData(data){
     tbody.innerHTML = "";
 
     data.forEach(r => {
+
+        let ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+
         let row = `<tr>
-            <td>${r.id ?? ""}</td>
-            <td>${r.sensor1 ?? ""}</td>
-            <td>${r.sensor2 ?? ""}</td>
-            <td>${r.sensor3 ?? ""}</td>
-            <td>${r.timestamp ?? ""}</td>
+            <td>${r.id || ""}</td>
+            <td>${r.sensor1 || ""}</td>
+            <td>${r.sensor2 || ""}</td>
+            <td>${r.sensor3 || ""}</td>
+            <td>${ts}</td>
         </tr>`;
+
         tbody.innerHTML += row;
     });
 }
